@@ -31,6 +31,11 @@
         ;/ mode
 
         ; TODO: motor temp
+        (var imgbuf (img-buffer dm-pool 'indexed4 160 15))
+        (img-clear imgbuf)
+        (var str (str-from-n stats-motor-temp "Motor Temp: %dC"))
+        (ttf-text-center str font-16 imgbuf)
+        (disp-render imgbuf 300 10 colors-text-aa)
         ; /motor temp
 
         ; Battery % bars
