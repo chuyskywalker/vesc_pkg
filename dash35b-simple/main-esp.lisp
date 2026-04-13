@@ -1,0 +1,118 @@
+; This code is designed to be installed on the ESP chip (str365.io) in the maxim controller
+; Here we are going to read the buttons and turn on some lights.
+; Currently, all of the lighting is done directly via switches on the bike; I did not feel like
+; wiring up all of the lighting (and the blinking routines) through the VESC.
+; This does, however, mean that the display can't mirror the current state of the bike (for instance,
+; there is no headlight on/off, no blinkers, etc). I don't really consider it a huge downside, though.
+; The system COULD be rewired, but meh for now.
+
+(import "pkg@://vesc_packages/lib_code_server/code_server.vescpkg" 'code-server)
+(read-eval-program code-server)
+
+(import "pkg@://vesc_packages/lib_tca9535/tca9535.vescpkg" 'tca9535)
+(read-eval-program tca9535)
+
+; When the buttons press, they are connected to ground
+(def io-pin-park 13)
+(def io-pin-mode 15)
+
+(define last-park-state 0)
+(define last-mode-state 0)
+
+; Bike startup drive mode
+(def drive-mode 1) ; 0 reverse; 1 neutral; 2 low; 3 med; 4 high
+
+; For each button, create a mapping in which the index value being
+; acts as the current mode and looking that up points to the next mode
+; Makes for a very efficient and handy remapping when the button is pressed
+
+;                        ix 0   1   2   3   4
+;                           R>N N>R L>N M>N H>N
+(define park-mappings (list 1   0   1   1   1  ))
+
+;                        ix 0   1   2   3   4
+;                           R>L N>L L>M M>H H>L
+(define mode-mappings (list 2   2   3   4   2  ))
+
+@const-start
+
+(defun proc-sid (id data) {
+    (cond
+        ((= id 314) {
+            ; Set the brake light on/off if we have a valid bit 'o data
+            ; (hiliariously, it's actually a whole BYTE when a bit,
+            ; could indeed, suffice -- but I'm not gonna arse about trying
+            ; to bitwise things here since it's the only data in the
+            ; whole packet anyway...)
+            (def desired_brake_state (bufget-u8 data 0))
+            (cond
+                ((= desired_brake_state 0) (gpio-write 3 0))
+                ((= desired_brake_state 1) (gpio-write 3 1))
+            )
+        })
+    )
+})
+
+(defun event-handler ()
+    (loopwhile t
+        (recv
+            ((event-can-sid . ((? id) . (? data))) (proc-sid id data))
+            (_ nil)
+)))
+
+(defun main () {
+    (set-print-prefix "ESP-")
+
+    ; https://github.com/vedderb/vesc_pkg/blob/af658dd56a7f9d26c8f38361f42d9eef563d34ce/vl_bike_39p/code_esp.lbm#L174
+    ; Force ublox-driver to stop as we will use the same pins for the io-expander
+    (uart-start 0 20 21 115200)
+    (uart-stop 0)
+    ; //end copypaste
+
+    ; just make sure the light is in OUTPUT mode
+    (gpio-configure 3 'pin-mode-out)
+
+    (event-register-handler (spawn event-handler))
+    (event-enable 'event-can-sid)
+
+    (start-code-server)
+
+    (tca9535-init 0x20 'rate-100k 21 20)
+    (tca9535-set-dir '(17 out))
+    ; set the tca to read high pins, since that's where the park/mode
+    ; button are and I'm not using the other pins
+    (tca9535-write-pins '(17 1))
+
+    (loopwhile-thd ("readbuttons" 200) t {
+
+        (var pin-states (tca9535-read-pins io-pin-park io-pin-mode))
+        (var park-state (ix pin-states 0))
+        (var mode-state (ix pin-states 1))
+
+        (if (and (= last-mode-state 1) (= mode-state 0)) {
+            (setq drive-mode (ix mode-mappings drive-mode))
+        })
+
+        (if (and (= last-park-state 1) (= park-state 0)) {
+            (setq drive-mode (ix park-mappings drive-mode))
+        })
+
+        (setq last-mode-state mode-state)
+        (setq last-park-state park-state)
+
+        (sleep 0.05) ; a very quick loop to catch the button presses
+    })
+
+    ; send the drive mode on repeat; if we only sent it on button press (in the above thread)
+    ; it's possible the message could be missed, but we also dont need to send it SUPER fast
+    (loopwhile-thd ("CANSend" 200) t {
+        (can-send-sid 301 (list drive-mode 0 0 0 0 0 0 0))
+        (sleep 0.25)
+    })
+
+})
+
+@const-end
+
+(image-save)
+(main)
