@@ -20,7 +20,7 @@
 (define last-mode-state 0)
 
 ; Bike startup drive mode
-(def drive-mode 1) ; 0 reverse; 1 neutral; 2 low; 3 med; 4 high
+(def drive-mode 4) ; 0 reverse; 1 neutral; 2 low; 3 med; 4 high
 
 ; For each button, create a mapping in which the index value being
 ; acts as the current mode and looking that up points to the next mode
