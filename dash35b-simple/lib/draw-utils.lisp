@@ -1,6 +1,6 @@
 @const-start
 
-(defun ttf-txt-center (txt font imgbuf) {
+(defun ttf-text-center (txt font imgbuf) {
     (var (w-txt h-txt) (ttf-text-dims font txt))
     (var (w-glyph h-glyph) (ttf-glyph-dims font "D"))
     (var (w-img h-img) (img-dims imgbuf))
@@ -30,7 +30,7 @@
 
 ;; Given an image buffer draw a right aligned text in there and
 ;; then stuff the image buffer onto display at pos x y
-(defun ttf-txt-right (imgbuf x y str) {
+(defun ttf-text-right (imgbuf x y str) {
     (var (w-txt h-txt) (ttf-text-dims font-16 str))
     (var (w-img h-img) (img-dims imgbuf))
     (var render-x (- w-img w-txt))
@@ -41,7 +41,7 @@
 
 ;; Given an image buffer draw a left aligned text in there and
 ;; then stuff the image buffer onto display at pos x y
-(defun ttf-txt-left (imgbuf x y str) {
+(defun ttf-text-left (imgbuf x y str) {
     (img-clear imgbuf)
     (ttf-text imgbuf 0 16 '(0 1 2 3) font-16 str)
     (disp-render imgbuf x y colors-text-aa)
