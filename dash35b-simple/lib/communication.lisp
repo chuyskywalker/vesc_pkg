@@ -1,6 +1,6 @@
 
 ; ID 302
-(def stats-drive-mode 0)
+(def stats-drive-mode 5)
 (def stats-speed 0)
 (def stats-bat-percent 0)
 (def stats-motor-temp 0)
