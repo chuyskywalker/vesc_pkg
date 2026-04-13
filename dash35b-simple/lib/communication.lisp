@@ -59,4 +59,3 @@
             ((event-can-sid . ((? id) . (? data))) (proc-sid id data))
             (_ nil)
 )))
-
