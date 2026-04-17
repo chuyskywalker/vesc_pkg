@@ -60,6 +60,23 @@
             (_ nil)
 )))
 
+(defun sample-tca-pin (register pinid) {
+    ; i feel like "pinid" should be all you need so you can
+    ; identify which 1/0 value to write for pin 17
+    ; i've turned it off to see if I could increase the read pin speed to avoid misses
+    ;(tca9535-write-pins (if (= register 1) '(17 1) '(17 0)))
+    (var sample-num 3) ; this should always be an odd number, fyi
+    (var sum 0)
+    (looprange j 0 sample-num {
+        (sleep 0.01)
+        (var sample (tca9535-read-pins pinid))
+        (setq sum (+ sum sample))
+    })
+    ;(print (list "pindid, sum" pinid sum))
+    ; If more than half of the samples are set, report 1, else 0
+    (if (> sum (/ sample-num 2)) 1 0)
+})
+
 (defun main () {
     (set-print-prefix "ESP-")
 
@@ -79,22 +96,23 @@
 
     (tca9535-init 0x20 'rate-100k 21 20)
     (tca9535-set-dir '(17 out))
-    ; set the tca to read high pins, since that's where the park/mode
-    ; button are and I'm not using the other pins
     (tca9535-write-pins '(17 1))
 
-    (loopwhile-thd ("readbuttons" 200) t {
 
-        (var pin-states (tca9535-read-pins io-pin-park io-pin-mode))
-        (var park-state (ix pin-states 0))
-        (var mode-state (ix pin-states 1))
+    (loopwhile-thd ("readbuttons" 200) t {
+        (var park-state (sample-tca-pin 1 io-pin-park))
+        (var mode-state (sample-tca-pin 1 io-pin-mode))
+
+        ;(print (list "mode state" mode-state))
 
         (if (and (= last-mode-state 1) (= mode-state 0)) {
             (setq drive-mode (ix mode-mappings drive-mode))
+            (print "setting mode")
         })
 
         (if (and (= last-park-state 1) (= park-state 0)) {
             (setq drive-mode (ix park-mappings drive-mode))
+            (print "setting park")
         })
 
         (setq last-mode-state mode-state)

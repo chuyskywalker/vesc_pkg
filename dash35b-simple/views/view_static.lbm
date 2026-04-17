@@ -11,6 +11,7 @@
 ;        (def stats-bat-percent 0)
 ;        (def stats-motor-temp 0)
 ;        (def stats-watts 0)
+;        (def stats-amps 0.0)
 ;        (def stats-bat-voltage 0.0)
 
         ; Mode Symbol
@@ -30,7 +31,6 @@
         (disp-render imgbuf 10 8 colors-text-aa)
         ;/ mode
 
-        ; TODO: motor temp
         (var imgbuf (img-buffer dm-pool 'indexed4 160 15))
         (img-clear imgbuf)
         (var str (str-from-n stats-motor-temp "Motor Temp: %dC"))
@@ -79,16 +79,29 @@
         (ttf-text imgbuf 10 10 '(0 1 2 3) font-16 "watts")
         (disp-render imgbuf 80 170 colors-speed)
 
-
-        (var imgbuf (img-buffer dm-pool 'indexed4 150 90))
+        (var imgbuf (img-buffer dm-pool 'indexed4 50 15))
         (img-clear imgbuf)
-        (ttf-text imgbuf 0 90 '(0 3) font-90 (str-from-n stats-speed))
+        (ttf-text imgbuf 10 10 '(0 1 2 3) font-16 "amps")
+        (disp-render imgbuf 80 280 colors-speed)
+
+
+        (var imgbuf (img-buffer dm-pool 'indexed4 250 90))
+        (img-clear imgbuf)
+        (ttf-text-center (str-from-n stats-speed) font-90 imgbuf '(0 3))
+        ;(ttf-text imgbuf 0 90 '(0 3) font-90 (str-from-n stats-speed))
         (disp-render imgbuf 120 55 colors-speed)
 
         (var imgbuf (img-buffer dm-pool 'indexed4 250 90))
         (img-clear imgbuf)
-        (ttf-text imgbuf 0 90 '(0 3) font-90 (str-from-n stats-watts))
+        (ttf-text-center (str-from-n (if (< (abs stats-watts) 25) 0 stats-watts)) font-90 imgbuf '(0 3))
+        ;(ttf-text imgbuf 0 90 '(0 3) font-90 (str-from-n stats-watts))
         (disp-render imgbuf 120 185 colors-speed)
+
+        (var imgbuf (img-buffer dm-pool 'indexed4 150 40))
+        (img-clear imgbuf)
+        (ttf-text-center (str-from-n (if (< (abs stats-amps) 1) 0 stats-amps)) font-48 imgbuf)
+        (disp-render imgbuf 230 280 colors-text-aa)
+
         ; /speed
 
         (sleep 0.05)

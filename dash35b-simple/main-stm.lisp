@@ -129,13 +129,11 @@
         ; display could simply say "<0" if zero reported
         (bufset-u8  buf-can 3 (clamp (to-i (get-temp-mot)) 0 256))
 
-        ; current measured in amps, float32. multiple by vin (voltage) to get watts, examples:
-        ;  23.3245 *  76.3245 =  1,780.23080025 -> 1780w
-        ; 590.9345 * 145.983  = 86,266.3911135  -> 86266w    << would overflow;
-        ;  -66.540 *  67.239  = -4,474.08306    -> -4474w
-        ; I likely won't see > 32kw, so i'm clamping it into an i16;
-        ; display could see high number and just say "OVER 9000!""
-        (bufset-i16 buf-can 4 (clamp (* (get-current) (get-vin)) -32768 32767))
+        ; motor current measured in amps, float32; level up by 100 for accuracy
+        ; ie:  25.89 a ->   259
+        ;    -489.34 a -> -4893
+        ; largest would be 32767/10 = 3276.7 -- likely fine :D
+        (bufset-i16 buf-can 4 (clamp (* (get-current) 10) -32768 32767))
 
         ; voltage leveled up by 100; ie: 76.52v -> 7652
         (bufset-u16 buf-can 6 (* (get-vin) 100))
