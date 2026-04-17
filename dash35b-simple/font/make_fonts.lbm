@@ -16,7 +16,7 @@
 (fwrite f roboto-bold-16-2c)
 (fclose f)
 
-(define roboto-bold-48-4c (ttf-prepare roboto 48 'indexed4 "NPRD12345-"))
+(define roboto-bold-48-4c (ttf-prepare roboto 48 'indexed4 "NPRD0123456789.-,"))
 (def f (fopen "roboto-bold-48-4c.bin" "w"))
 (fwrite f roboto-bold-48-4c)
 (fclose f)
