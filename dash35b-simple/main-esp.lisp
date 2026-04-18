@@ -6,9 +6,6 @@
 ; there is no headlight on/off, no blinkers, etc). I don't really consider it a huge downside, though.
 ; The system COULD be rewired, but meh for now.
 
-;(import "pkg@://vesc_packages/lib_code_server/code_server.vescpkg" 'code-server)
-;(read-eval-program code-server)
-
 (import "pkg@://vesc_packages/lib_tca9535/tca9535.vescpkg" 'tca9535)
 (read-eval-program tca9535)
 
@@ -101,8 +98,6 @@
 
     (event-register-handler (spawn event-handler))
     (event-enable 'event-can-sid)
-
-    ;(start-code-server)
 
     (tca9535-init 0x20 'rate-100k 21 20)
     ; I'm not 100% sure how this works, but with this setup the buttons
