@@ -130,7 +130,7 @@
     ; it's possible the message could be missed, but we also dont need to send it SUPER fast
     (loopwhile-thd ("CANSend" 200) t {
         (can-send-sid 301 (list drive-mode 0 0 0 0 0 0 0))
-        (sleep 0.25)
+        (sleep 0.100) ; every 100ms, 10 times per second
     })
 
 })
