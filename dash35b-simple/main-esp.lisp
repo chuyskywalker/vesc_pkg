@@ -9,18 +9,20 @@
 (import "pkg@://vesc_packages/lib_tca9535/tca9535.vescpkg" 'tca9535)
 (read-eval-program tca9535)
 
-; When the buttons press, they are connected to ground
-(def io-pin-park 13)
-(def io-pin-mode 15)
+; The pin numbers here correspond to the IOExpander pin value; harness pin noted in comment
+; These should be connected to 12v to be detected as a button push
+(def io-pin-park 13) ; pin 24 "neutral input"
+(def io-pin-mode 15) ; pin 38 "mode input"
 
+; Tracking last button state so we can detect pushes
 (define last-park-state 0)
 (define last-mode-state 0)
 
 ; Bike startup drive mode
 (def drive-mode 4) ; 0 reverse; 1 neutral; 2 low; 3 med; 4 high
 
-; For each button, create a mapping in which the index value being
-; acts as the current mode and looking that up points to the next mode
+; For each button, create a mapping in which, if you query the current mode as
+; the index value, you will get the value for the next mode
 ; Makes for a very efficient and handy remapping when the button is pressed
 
 ;                        ix 0   1   2   3   4
@@ -37,7 +39,7 @@
     (cond
         ((= id 314) {
             ; Set the brake light on/off if we have a valid bit 'o data
-            ; (hiliariously, it's actually a whole BYTE when a bit,
+            ; (hilariously, it's actually a whole BYTE when a bit,
             ; could indeed, suffice -- but I'm not gonna arse about trying
             ; to bitwise things here since it's the only data in the
             ; whole packet anyway...)
@@ -57,13 +59,13 @@
             (_ nil)
 )))
 
-; very specific function to as quickly as possible read tca pins
+; very specific function to as quickly as possible read tca pins, but also not get false positives
 (defun read-pins-park-mode () {
     (var park-sum 0)
     (var mode-sum 0)
     (var sample-num 9)
     (looprange j 0 sample-num {
-        (sleep 0.001)
+        (sleep 0.001) ; very quick sampling rate + "high" sample count above to denoise the line
 
         ; a more low-level read of the tca to bypass reading both registers
         (var reg1 (bufcreate 1))
@@ -109,8 +111,6 @@
         (var pin-states (read-pins-park-mode))
         (var park-state (ix pin-states 0))
         (var mode-state (ix pin-states 1))
-
-        ;(print (list "mode state" mode-state))
 
         (if (and (= last-park-state 1) (= park-state 0)) {
             (setq drive-mode (ix park-mappings drive-mode))
