@@ -27,7 +27,7 @@
         ((= id 301) {
             (var drive-mode-new (bufget-u8 data 0))
             (if (!= drive-mode-new drive-mode) {
-                (print (list "setting drive mode from -> to " drive-mode drive-mode-new))
+                ;(print (list "setting drive mode from -> to " drive-mode drive-mode-new))
                 (setq drive-mode drive-mode-new)
                 (match drive-mode
                     (0 { ; Reverse
