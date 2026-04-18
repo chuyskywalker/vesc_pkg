@@ -6,8 +6,8 @@
 ; there is no headlight on/off, no blinkers, etc). I don't really consider it a huge downside, though.
 ; The system COULD be rewired, but meh for now.
 
-(import "pkg@://vesc_packages/lib_code_server/code_server.vescpkg" 'code-server)
-(read-eval-program code-server)
+;(import "pkg@://vesc_packages/lib_code_server/code_server.vescpkg" 'code-server)
+;(read-eval-program code-server)
 
 (import "pkg@://vesc_packages/lib_tca9535/tca9535.vescpkg" 'tca9535)
 (read-eval-program tca9535)
@@ -60,21 +60,31 @@
             (_ nil)
 )))
 
-(defun sample-tca-pin (register pinid) {
-    ; i feel like "pinid" should be all you need so you can
-    ; identify which 1/0 value to write for pin 17
-    ; i've turned it off to see if I could increase the read pin speed to avoid misses
-    ;(tca9535-write-pins (if (= register 1) '(17 1) '(17 0)))
-    (var sample-num 3) ; this should always be an odd number, fyi
-    (var sum 0)
+; very specific function to as quickly as possible read tca pins
+(defun read-pins-park-mode () {
+    (var park-sum 0)
+    (var mode-sum 0)
+    (var sample-num 9)
     (looprange j 0 sample-num {
-        (sleep 0.01)
-        (var sample (tca9535-read-pins pinid))
-        (setq sum (+ sum sample))
+        (sleep 0.001)
+
+        ; a more low-level read of the tca to bypass reading both registers
+        (var reg1 (bufcreate 1))
+        (i2c-tx-rx (assoc tca9535-regs 'addr) '(1) reg1)
+
+        ; extract the specific pins we want, as they are located in the second register,
+        ; we need to subtract 10 from the pin ids to arrive at the correct bit to extract
+        (var park-pin (bits-dec-int (bufget-u8 reg1 0) (- io-pin-park 10) 1))
+        (var mode-pin (bits-dec-int (bufget-u8 reg1 0) (- io-pin-mode 10) 1))
+
+        ; sum the values
+        (setq park-sum (+ park-sum park-pin))
+        (setq mode-sum (+ mode-sum mode-pin))
     })
-    ;(print (list "pindid, sum" pinid sum))
     ; If more than half of the samples are set, report 1, else 0
-    (if (> sum (/ sample-num 2)) 1 0)
+    (list
+        (if (> park-sum (/ sample-num 2)) 1 0)
+        (if (> mode-sum (/ sample-num 2)) 1 0))
 })
 
 (defun main () {
@@ -92,33 +102,33 @@
     (event-register-handler (spawn event-handler))
     (event-enable 'event-can-sid)
 
-    (start-code-server)
+    ;(start-code-server)
 
     (tca9535-init 0x20 'rate-100k 21 20)
+    ; I'm not 100% sure how this works, but with this setup the buttons
+    ; get wired 12v & signal to function
     (tca9535-set-dir '(17 out))
-    (tca9535-write-pins '(17 1))
-
+    (tca9535-write-pins '(17 0))
 
     (loopwhile-thd ("readbuttons" 200) t {
-        (var park-state (sample-tca-pin 1 io-pin-park))
-        (var mode-state (sample-tca-pin 1 io-pin-mode))
+        (var pin-states (read-pins-park-mode))
+        (var park-state (ix pin-states 0))
+        (var mode-state (ix pin-states 1))
 
         ;(print (list "mode state" mode-state))
 
-        (if (and (= last-mode-state 1) (= mode-state 0)) {
-            (setq drive-mode (ix mode-mappings drive-mode))
-            (print "setting mode")
-        })
-
         (if (and (= last-park-state 1) (= park-state 0)) {
             (setq drive-mode (ix park-mappings drive-mode))
-            (print "setting park")
         })
 
-        (setq last-mode-state mode-state)
-        (setq last-park-state park-state)
+        (if (and (= last-mode-state 1) (= mode-state 0)) {
+            (setq drive-mode (ix mode-mappings drive-mode))
+        })
 
-        (sleep 0.05) ; a very quick loop to catch the button presses
+        (setq last-park-state park-state)
+        (setq last-mode-state mode-state)
+
+        (sleep 0.010) ; a very quick loop to catch the button presses
     })
 
     ; send the drive mode on repeat; if we only sent it on button press (in the above thread)
