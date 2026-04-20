@@ -82,6 +82,9 @@
 
     (print "KNIGHT ACTIVE")
 
+    ; remap the hall inputs because I blew the 5v hall array on my controller
+    (conf-remap-hall 'pin-swclk 'pin-swdio 'pin-ppm)
+
     ; turn on the 12v
     (set-aux 1 1)
 
