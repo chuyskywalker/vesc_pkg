@@ -1,7 +1,3 @@
-; This LISP file is designed to be installed on the STM (maxim) unit in the controller.
-; A different file (str365.lisp) is installed on the ESP chip in the controller.
-; Finally, installed the normal disp35b package, downloaded it, and injected a bit
-; of code to listen for the `301` drive mode and update the drive mode for the display.
 
 ; track if the brake light should be on/off
 ; this will be sent out on canbus so the ESP can turn the light on/off
@@ -103,14 +99,14 @@
 
         ; FYI: all of these transfer as ints, thus if you are sending over a float value,
         ;       we multiply by some factor to capture a chunk of the decimal places.
-        ;       on the display, these values have to be divded back out.
+        ;       on the display, these values have to be divided back out.
         ;       I also clamp in a few places where exceptional cases would cause
         ;       a "roll over" value that would report high/low instead
         ;       (technically possible to send floats, but a bit of a waste)
         ; reminder for self:
-        ; i8         -128 -     128        u8  0 -      256
-        ; i16      -32768 -   32767       u16  0 -    65535
-        ; i24    −8388608 - 8388607       u24  0 - 16777215
+        ;  i8        -128 -     128        u8  0 -      256   ( 8 bits, 1 byte)
+        ; i16      -32768 -   32767       u16  0 -    65535   (16 bits, 2 byte)
+        ; i24    −8388608 - 8388607       u24  0 - 16777215   (24 bits, 3 byte)
         (bufclear buf-can)
 
         ; what's really needed:
@@ -120,28 +116,39 @@
         ; ESP is the intention, but not actual
         (bufset-u8  buf-can 0 drive-mode)
 
-        ; m/s * 2.237ish ~ mph; only 0-256mph, whole numbers, lol
-        (bufset-u8  buf-can 1 (* (abs (get-speed)) 2.23694))
+        ; m/s * 2.237ish ~= mph; multiply by 10 so we can get one decimal place; ie up to 6,553.5 mph
+        (bufset-u16  buf-can 1 (* (abs (get-speed)) 2.23694 10))
 
         ; 0.0 to 1.0, brought up to 0 - 100; it's percentage, we don't need sub-1% accuracy
-        (bufset-u8  buf-can 2 (* (get-batt) 100))
+        (bufset-u8  buf-can 3 (* (get-batt) 100))
 
-        ; celcius; hot motor would be 150.32C, just lop off the sub 1c accuracy;
+        ; voltage leveled up by 100; ie: 76.52v -> 7652 (max would be 655.35v)
+        (bufset-u16 buf-can 4 (* (get-vin) 100))
+
+        ; celcius; hot motor would be 150.32C
         ; under 0C (below freezing outside, bike stored outside) will just get
         ; clamped to zero, but motors heat up so fast it'll resolve quickly
         ; display could simply say "<0" if zero reported
-        (bufset-u8  buf-can 3 (clamp (to-i (get-temp-mot)) 0 256))
+        ;  22.34C ->  2234
+        ; 172.98C -> 17298
+        ; 655.35C -> 65535
+        (bufset-u16  buf-can 6 (* (get-temp-mot) 100))
+
+        (can-send-sid 304 buf-can)
+
+        ; second message, not everything fits in the first 8 bytes
+        ; contains battery amps (for wattage calcs) and motor amps (for performance/heating awareness)
+        (bufclear buf-can)
+        ; input current (ie: battery current), needed for proper wattage calcs (bat cur * bat volts)
+        (bufset-i16 buf-can 0 (clamp (* (get-current-in) 10) -32768 32767))
 
         ; motor current measured in amps, float32; level up by 100 for accuracy
         ; ie:  25.89 a ->   259
         ;    -489.34 a -> -4893
         ; largest would be 32767/10 = 3276.7 -- likely fine :D
-        (bufset-i16 buf-can 4 (clamp (* (get-current) 10) -32768 32767))
+        (bufset-i16 buf-can 2 (clamp (* (get-current) 10) -32768 32767))
 
-        ; voltage leveled up by 100; ie: 76.52v -> 7652
-        (bufset-u16 buf-can 6 (* (get-vin) 100))
-
-        (can-send-sid 302 buf-can)
+        (can-send-sid 305 buf-can)
 
         (sleep 0.1)
     })

@@ -1,6 +1,6 @@
 ; This code is designed to be installed on the ESP chip (str365.io) in the maxim controller
 ; Here we are going to read the buttons and turn on some lights.
-; Currently, all of the lighting is done directly via switches on the bike; I did not feel like
+; Currently, MOST of the lighting is done directly via switches on the bike; I did not feel like
 ; wiring up all of the lighting (and the blinking routines) through the VESC.
 ; This does, however, mean that the display can't mirror the current state of the bike (for instance,
 ; there is no headlight on/off, no blinkers, etc). I don't really consider it a huge downside, though.

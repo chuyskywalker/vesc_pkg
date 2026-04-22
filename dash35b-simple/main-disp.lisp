@@ -2,7 +2,7 @@
 ; This is notable different from the mainline dash35 in a few ways:
 ; 1) The input button system is totally ignored -- all inputs are tied in to the controller instead
 ; 2) There are no "pages" on this version -- it's radically simplified showing just:
-;    - speed, watts, battery voltage, bat %, and motor temp
+;    - speed, watts, amps, battery voltage, bat %, and motor temp
 ;    These are what I considered to be the critically important details on the dash
 
 @const-start
@@ -26,7 +26,6 @@
 
 ; Fonts
 (import "font/roboto-bold-16-4c.bin" 'font-16)
-(import "font/roboto-bold-16-2c.bin" 'font-16-2c)
 (import "font/roboto-bold-48-4c.bin" 'font-48)
 (import "font/roboto-bold-90-2c.bin" 'font-90)
 
