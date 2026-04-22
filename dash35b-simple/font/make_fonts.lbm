@@ -11,17 +11,12 @@
 (fwrite f roboto-bold-16-4c)
 (fclose f)
 
-(define roboto-bold-16-2c (ttf-prepare roboto 16 'indexed2 all-chars))
-(def f (fopen "roboto-bold-16-2c.bin" "w"))
-(fwrite f roboto-bold-16-2c)
-(fclose f)
-
-(define roboto-bold-48-4c (ttf-prepare roboto 48 'indexed4 "NPRD0123456789.-,"))
+(define roboto-bold-48-4c (ttf-prepare roboto 48 'indexed4 "DNPR0123456789.-,/ "))
 (def f (fopen "roboto-bold-48-4c.bin" "w"))
 (fwrite f roboto-bold-48-4c)
 (fclose f)
 
-(define roboto-bold-90-2c (ttf-prepare roboto 90 'indexed2 "D0123456789.-,"))
+(define roboto-bold-90-2c (ttf-prepare roboto 90 'indexed2 "D0123456789.-, "))
 (def f (fopen "roboto-bold-90-2c.bin" "w"))
 (fwrite f roboto-bold-90-2c)
 (fclose f)
