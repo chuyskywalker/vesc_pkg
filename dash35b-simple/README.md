@@ -11,5 +11,3 @@ main-stm.lisp  --> maxim
 main-esp.lisp  --> esp on the maxim (str365.io)
 main-disp.lisp --> the dash35 (vdisp)
 ```
-
-One other big notable item is that this setup uses hall sensing, but takes hall 1/2/3 signals via the controller's SWCLK/SWDIO/PPM pins because an accident fried my hall array.
