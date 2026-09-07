@@ -6,20 +6,17 @@
 ; there is no headlight on/off, no blinkers, etc). I don't really consider it a huge downside, though.
 ; The system COULD be rewired, but meh for now.
 
-(import "pkg@://vesc_packages/lib_tca9535/tca9535.vescpkg" 'tca9535)
-(read-eval-program tca9535)
-
-; The pin numbers here correspond to the IOExpander pin value; harness pin noted in comment
-; These should be connected to 12v to be detected as a button push
-(def io-pin-park 13) ; pin 24 "neutral input"
-(def io-pin-mode 15) ; pin 38 "mode input"
-
 ; Tracking last button state so we can detect pushes
 (define last-park-state 0)
 (define last-mode-state 0)
 
 ; Bike startup drive mode
 (def drive-mode 4) ; 0 reverse; 1 neutral; 2 low; 3 med; 4 high
+
+(import "pkg@://vesc_packages/lib_tca9535/tca9535.vescpkg" 'tca9535)
+(read-eval-program tca9535)
+
+@const-start
 
 ; For each button, create a mapping in which, if you query the current mode as
 ; the index value, you will get the value for the next mode
@@ -33,7 +30,10 @@
 ;                           R>L N>L L>M M>H H>L
 (define mode-mappings (list 2   2   3   4   2  ))
 
-@const-start
+; The pin numbers here correspond to the IOExpander pin value; harness pin noted in comment
+; These should be connected to 12v to be detected as a button push
+(def io-pin-park 13) ; pin 24 "neutral input"
+(def io-pin-mode 15) ; pin 38 "mode input"
 
 (defun proc-sid (id data) {
     (cond
